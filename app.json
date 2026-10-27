@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "AsonyxAI",
+    "slug": "AsonyxAI",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "asonyxai",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.asonyx.ai"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#062320",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.asonyx.ai",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Asonyx AI to use this phone's camera for ride safety photos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
