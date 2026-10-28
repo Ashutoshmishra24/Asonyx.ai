@@ -56,6 +56,8 @@ export default function DocumentsScreen() {
     }
   }, []);
 
+  // Reading the private vault is the screen's initial external synchronization.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [refresh]);
 
   const visibleItems = useMemo(() => items.filter(item => {

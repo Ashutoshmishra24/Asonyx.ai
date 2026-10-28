@@ -4,8 +4,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, ChevronRight, ShieldCheck, X } from 'lucide-react-native';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Check, ChevronRight, ShieldCheck, X } from 'lucide-react-native';
 import { useRouter, type Href } from 'expo-router';
 import { usePlan, type BillingPeriod, type PlanId } from '../../../contexts/plan-context';
 import { SafeAreaView } from 'react-native-safe-area-context';

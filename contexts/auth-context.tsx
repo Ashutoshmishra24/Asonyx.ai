@@ -1,44 +1,61 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import * as FirebaseAuth from 'firebase/auth';
 import {
-  EmailAuthProvider,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
-  linkWithCredential,
+  initializeAuth,
   onAuthStateChanged,
   signInWithCredential,
   signInWithEmailAndPassword,
-  signInWithPhoneNumber,
   signOut,
-  type ConfirmationResult,
+  type Auth,
+  type Persistence,
   type User,
-} from '@react-native-firebase/auth';
-import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
+} from 'firebase/auth';
 
 type AuthContextValue = {
   user: User | null;
   initializing: boolean;
-  pendingPhone: string | null;
-  sendPhoneCode: (phone: string) => Promise<void>;
-  confirmPhoneCode: (code: string) => Promise<void>;
-  linkEmailPassword: (email: string, password: string) => Promise<void>;
+  createAccount: (email: string, password: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<boolean>;
+  signInWithGoogleIdToken: (idToken: string) => Promise<void>;
   signOutUser: () => Promise<void>;
 };
 
+const firebaseConfig = {
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
+};
+
+const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const getReactNativePersistence = (FirebaseAuth as unknown as {
+  getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
+}).getReactNativePersistence;
+
+let firebaseAuth: Auth;
+try {
+  firebaseAuth = initializeAuth(firebaseApp, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch {
+  firebaseAuth = getAuth(firebaseApp);
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
-GoogleSignin.configure(webClientId ? { webClientId } : {});
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(firebaseAuth.currentUser);
   const [initializing, setInitializing] = useState(true);
-  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
-  const [pendingPhone, setPendingPhone] = useState<string | null>(null);
 
-  useEffect(() => onAuthStateChanged(getAuth(), currentUser => {
+  useEffect(() => onAuthStateChanged(firebaseAuth, currentUser => {
     setUser(currentUser);
     setInitializing(false);
   }), []);
@@ -46,46 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     user,
     initializing,
-    pendingPhone,
-    async sendPhoneCode(phone) {
-      const result = await signInWithPhoneNumber(getAuth(), phone);
-      setPendingPhone(phone);
-      setConfirmation(result);
-    },
-    async confirmPhoneCode(code) {
-      if (!confirmation) throw new Error('Request a new verification code first.');
-      const credential = await confirmation.confirm(code);
-      if (!credential) throw new Error('Firebase could not verify this code. Please try again.');
-      setConfirmation(null);
-    },
-    async linkEmailPassword(email, password) {
-      const currentUser = getAuth().currentUser;
-      if (!currentUser) throw new Error('Verify your phone number before adding an email and password.');
-      await linkWithCredential(currentUser, EmailAuthProvider.credential(email, password));
-      setPendingPhone(null);
+    async createAccount(email, password) {
+      await createUserWithEmailAndPassword(firebaseAuth, email, password);
     },
     async signInWithEmail(email, password) {
-      await signInWithEmailAndPassword(getAuth(), email, password);
+      await signInWithEmailAndPassword(firebaseAuth, email, password);
     },
-    async signInWithGoogle() {
-      if (!webClientId) {
-        throw new Error('Google sign-in is not configured. Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to your .env file.');
-      }
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
-      if (!isSuccessResponse(response)) return false;
-      const idToken = response.data.idToken;
-      if (!idToken) throw new Error('Google did not return an identity token. Check the Firebase web client ID.');
-      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken));
-      return true;
+    async signInWithGoogleIdToken(idToken) {
+      await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken));
     },
     async signOutUser() {
-      await signOut(getAuth());
-      await GoogleSignin.signOut().catch(() => undefined);
-      setConfirmation(null);
-      setPendingPhone(null);
+      await signOut(firebaseAuth);
     },
-  }), [confirmation, initializing, pendingPhone, user]);
+  }), [initializing, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -99,16 +89,13 @@ export function useAuth() {
 export function getAuthErrorMessage(error: unknown) {
   const value = error as { code?: string; message?: string };
   switch (value.code) {
-    case 'auth/invalid-phone-number': return 'Enter a valid phone number with its country code, for example +91 98765 43210.';
-    case 'auth/too-many-requests': return 'Too many attempts were made. Wait a little before trying again.';
-    case 'auth/invalid-verification-code': return 'That verification code is incorrect or expired.';
-    case 'auth/session-expired': return 'This verification session expired. Request a new code.';
-    case 'auth/email-already-in-use': return 'That email address is already connected to another account.';
+    case 'auth/email-already-in-use': return 'That email address is already connected to an account.';
     case 'auth/invalid-email': return 'Enter a valid email address.';
     case 'auth/weak-password': return 'Use a password with at least 6 characters.';
     case 'auth/invalid-credential': return 'The email or password is incorrect.';
     case 'auth/user-disabled': return 'This account has been disabled.';
     case 'auth/network-request-failed': return 'Check your internet connection and try again.';
-    default: return value.message?.replace(/^\[[^\]]+\]\s*/, '') || 'Authentication failed. Please try again.';
+    case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.';
+    default: return value.message?.replace(/^Firebase:\s*/, '').replace(/\s*\(auth\/.+\)\.?$/, '') || 'Authentication failed. Please try again.';
   }
 }

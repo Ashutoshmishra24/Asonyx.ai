@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components -- Payment method panels intentionally close over this preview form's local state. */
 import { useState } from 'react';
 import {
   Image, View, Text, ScrollView, TouchableOpacity,

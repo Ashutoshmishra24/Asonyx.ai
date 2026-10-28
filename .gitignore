@@ -30,8 +30,14 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# environment files (commit only the safe template)
+.env
+.env.*
+!.env.example
+
+# Firebase platform configuration (provide locally or as EAS secret files)
+google-services.json
+GoogleService-Info.plist
 
 # typescript
 *.tsbuildinfo

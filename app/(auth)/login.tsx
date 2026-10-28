@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { ArrowRight, Lock, Mail } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAuthErrorMessage, useAuth } from '../../contexts/auth-context';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const TEAL = '#24C6C9';
 
@@ -19,10 +23,36 @@ function GoogleMark() {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const { signInWithEmail, signInWithGoogleIdToken } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState<'email' | 'google' | null>(null);
+  const processedGoogleToken = useRef<string | null>(null);
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const [googleRequest, googleResponse, promptGoogle] = Google.useIdTokenAuthRequest({
+    webClientId,
+    androidClientId: androidClientId ?? webClientId,
+    iosClientId: iosClientId ?? webClientId,
+    selectAccount: true,
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type !== 'success') return;
+    const idToken = googleResponse.params.id_token ?? googleResponse.authentication?.idToken;
+    if (!idToken) {
+      Promise.resolve().then(() => setLoading(null));
+      Alert.alert('Google sign-in failed', 'Google did not return an identity token.');
+      return;
+    }
+    if (processedGoogleToken.current === idToken) return;
+    processedGoogleToken.current = idToken;
+    signInWithGoogleIdToken(idToken)
+      .then(() => router.replace('/(tabs)'))
+      .catch(error => Alert.alert('Google sign-in failed', getAuthErrorMessage(error)))
+      .finally(() => setLoading(null));
+  }, [googleResponse, router, signInWithGoogleIdToken]);
 
   const handleEmailSignIn = async () => {
     if (!/^\S+@\S+\.\S+$/.test(email.trim()) || !password) return Alert.alert('Check your details', 'Enter your email address and password.');
@@ -35,12 +65,19 @@ export default function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    const platformClientId = Platform.OS === 'android' ? androidClientId : Platform.OS === 'ios' ? iosClientId : webClientId;
+    if (!platformClientId) {
+      Alert.alert('Google sign-in setup needed', `Add EXPO_PUBLIC_GOOGLE_${Platform.OS.toUpperCase()}_CLIENT_ID to .env.local.`);
+      return;
+    }
     try {
       setLoading('google');
-      const signedIn = await signInWithGoogle();
-      if (signedIn) router.replace('/(tabs)');
-    } catch (error) { Alert.alert('Google sign-in failed', getAuthErrorMessage(error)); }
-    finally { setLoading(null); }
+      const result = await promptGoogle();
+      if (result.type !== 'success') setLoading(null);
+    } catch (error) {
+      setLoading(null);
+      Alert.alert('Google sign-in failed', getAuthErrorMessage(error));
+    }
   };
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: '#EEF7FD' }}>
@@ -57,10 +94,10 @@ export default function LoginScreen() {
           <View style={fieldStyle}><Lock size={19} color={TEAL} /><TextInput style={inputStyle} placeholder="Password" placeholderTextColor="#7A8993" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="current-password" returnKeyType="go" onSubmitEditing={handleEmailSignIn} /></View>
           <TouchableOpacity disabled={!!loading} onPress={handleEmailSignIn} style={{ height: 50, borderRadius: 13, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: loading ? 0.7 : 1 }}>{loading === 'email' ? <ActivityIndicator color="#071C21" /> : <><Text style={{ color: '#071C21', fontSize: 15, fontWeight: '800' }}>SIGN IN</Text><ArrowRight size={17} color="#071C21" /></>}</TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 20 }}><View style={{ flex: 1, height: 1, backgroundColor: '#D8E5EC' }} /><Text style={{ marginHorizontal: 12, color: '#52616B', fontSize: 12 }}>or</Text><View style={{ flex: 1, height: 1, backgroundColor: '#D8E5EC' }} /></View>
-          <TouchableOpacity disabled={!!loading} onPress={handleGoogleSignIn} style={{ height: 50, borderRadius: 13, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D8E5EC', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, opacity: loading ? 0.7 : 1 }}>{loading === 'google' ? <ActivityIndicator color="#4285F4" /> : <><GoogleMark /><Text style={{ color: '#17242D', fontWeight: '700', fontSize: 14 }}>Continue with Google</Text></>}</TouchableOpacity>
+          <TouchableOpacity disabled={!!loading || !googleRequest} onPress={handleGoogleSignIn} style={{ height: 50, borderRadius: 13, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D8E5EC', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, opacity: loading || !googleRequest ? 0.7 : 1 }}>{loading === 'google' ? <ActivityIndicator color="#4285F4" /> : <><GoogleMark /><Text style={{ color: '#17242D', fontWeight: '700', fontSize: 14 }}>Continue with Google</Text></>}</TouchableOpacity>
         </View>
-        <Text style={{ color: '#52616B', fontSize: 13, textAlign: 'center', marginTop: 28 }}>New rider? <Text onPress={() => router.push('/(auth)/signup-phone' as Href)} style={{ color: '#1ABDC1', fontWeight: '800', textDecorationLine: 'underline' }}>Create Account</Text></Text>
-        <Text style={{ color: '#82919B', fontSize: 11, textAlign: 'center', marginTop: 10 }}>Firebase authentication • Development build</Text>
+        <Text style={{ color: '#52616B', fontSize: 13, textAlign: 'center', marginTop: 28 }}>New rider? <Text onPress={() => router.push('/(auth)/signup-credentials' as Href)} style={{ color: '#1ABDC1', fontWeight: '800', textDecorationLine: 'underline' }}>Create Account</Text></Text>
+        <Text style={{ color: '#82919B', fontSize: 11, textAlign: 'center', marginTop: 10 }}>Firebase email authentication • Google uses browser OAuth</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView>;

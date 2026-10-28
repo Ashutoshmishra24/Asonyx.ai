@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ArrowLeft, Lock, Mail } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAuthErrorMessage, useAuth } from '../../contexts/auth-context';
 
 export default function SignUpCredentialsScreen() {
   const router = useRouter();
-  const { linkEmailPassword } = useAuth();
+  const { createAccount } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,17 +19,17 @@ export default function SignUpCredentialsScreen() {
     if (password !== confirmPassword) return Alert.alert('Passwords do not match', 'Enter the same password in both fields.');
     try {
       setLoading(true);
-      await linkEmailPassword(email.trim(), password);
+      await createAccount(email.trim(), password);
       router.replace('/(tabs)');
     } catch (error) { Alert.alert('Could not finish account', getAuthErrorMessage(error)); }
     finally { setLoading(false); }
   };
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: '#EEF7FD', paddingHorizontal: 22 }}>
-    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/signup-phone' as Href)} accessibilityLabel="Back" style={backStyle}><ArrowLeft size={19} color="#17242D" /></TouchableOpacity>
+    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')} accessibilityLabel="Back" style={backStyle}><ArrowLeft size={19} color="#17242D" /></TouchableOpacity>
     <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'center' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={{ color: '#15212A', fontSize: 26, fontWeight: '900' }}>Finish your account</Text>
-      <Text style={{ color: '#52616B', fontSize: 14, marginTop: 7, marginBottom: 26, lineHeight: 20 }}>Your phone is verified. Add an email and password for future sign-ins.</Text>
+      <Text style={{ color: '#15212A', fontSize: 26, fontWeight: '900' }}>Create your account</Text>
+      <Text style={{ color: '#52616B', fontSize: 14, marginTop: 7, marginBottom: 26, lineHeight: 20 }}>Use your email and a secure password to create your Firebase account.</Text>
       <Field icon="mail" placeholder="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" />
       <Field icon="lock" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" />
       <Field icon="lock" placeholder="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" onSubmitEditing={finish} />

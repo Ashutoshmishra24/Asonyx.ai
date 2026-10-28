@@ -1,16 +1,88 @@
-# Asonyx AI app preview
+# Asonyx AI
 
-Expo Router app for Android and iOS. The app preview uses the declared Expo and UI packages; it does not connect to cloud, payment, Bluetooth, or account services. GPS directions open the device's installed Maps app.
+An Expo Router mobile app for the Asonyx smart-helmet experience. It includes helmet and document interfaces, settings and support screens, plan previews, and Firebase Authentication.
 
-The Document Vault uses Expo's document picker and file system to import PDFs and images into private, persistent app storage on the device. It supports searching, filtering, opening, and deleting those files. Files are not uploaded, and uninstalling the app removes its private storage.
+## Authentication
 
-## Run in PowerShell
+- Email/password account creation and sign-in use the Firebase JavaScript SDK.
+- Google Sign-In uses browser OAuth through Expo AuthSession, then signs into Firebase with the returned Google ID token.
+- Phone OTP is not currently included.
+- Firebase is not used for Firestore, Storage, Analytics, or Cloud Functions.
 
-```powershell
-Set-Location 'C:\asonyxnewapp\asonyx'
-npm.cmd start
+Email/password works in Expo Go. Google OAuth requires a development or production build on mobile because Expo Go cannot provide the application-specific OAuth callback scheme.
+
+## Requirements
+
+- Node.js and npm
+- Expo Go for UI and email/password development
+- A Firebase project with Email/Password and Google providers enabled
+- Android Studio or EAS Build for Android development builds
+- Xcode on macOS or EAS Build for iOS development builds
+
+## Installation
+
+```bash
+git clone https://github.com/Ashutoshmishra24/Asonyx.ai.git
+cd Asonyx.ai
+npm install
+cp .env.example .env.local
 ```
 
-Scan the QR code with Expo Go on a compatible device on the same network. Press `a` in the Expo terminal to open an Android emulator. The iOS Simulator requires macOS and Xcode.
+Fill `.env.local` with the Firebase Web app configuration and Google OAuth client IDs. Detailed instructions are in [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
 
-The phone camera requests permission when opened, captures still photos only when tapped, and can save them to the local Document Vault. It does not record video or upload images. The sign-in screen is an offline preview: use code `1234`, or password `asonyx123`. These are demo credentials, not secure authentication. Google and X buttons show their brand marks but do not authenticate accounts yet. Payment, SOS dispatch, helmet sensor readings, Bluetooth pairing, voice recording, and support phone details are not live integrations. Plan prices are a UI preview; billing and plan access are not connected. The battery card shows a reading only after supported helmet hardware reports one; it does not invent a percentage.
+## Run with Expo Go
+
+```bash
+npm start
+```
+
+Scan the QR code with Expo Go. In this mode, the application UI and Firebase email/password authentication can be tested. Test Google OAuth in a development build.
+
+## Development builds
+
+Android:
+
+```bash
+npx expo run:android
+```
+
+iOS on macOS:
+
+```bash
+npx expo run:ios
+```
+
+The application identifiers are:
+
+```text
+Android package: com.asonyx.ai
+iOS bundle ID:   com.asonyx.ai
+URI scheme:      asonyxai
+```
+
+Generated `android/` and `ios/` directories are ignored. Configure native behavior through `app.json` and Expo config plugins.
+
+## Environment and Firebase files
+
+The following local configuration files are ignored and must not be committed:
+
+```text
+.env
+.env.*
+google-services.json
+GoogleService-Info.plist
+```
+
+`.env.example` contains safe placeholders and is committed as the setup template. Never commit service-account credentials, OAuth client secrets, signing keys, or private keys.
+
+## Checks
+
+```bash
+npx tsc --noEmit
+npm run lint
+npx expo-doctor
+```
+
+## Current scope
+
+The Document Vault stores imported files in the app's private on-device storage. Payment processing, live helmet Bluetooth/sensor integration, SOS dispatch, voice services, and plan billing remain UI previews or local interactions unless explicitly connected later.
