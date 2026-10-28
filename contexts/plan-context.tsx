@@ -1,11 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { File, Paths } from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type PlanId = 'free' | 'basic' | 'pro';
 export type BillingPeriod = 'monthly' | 'yearly';
 
-const PLAN_STORAGE = new File(Paths.document, 'asonyx-selected-plan.json');
-const LEGACY_PLAN_STORAGE = new File(Paths.document, 'asonyx-selected-plan.txt');
+const PLAN_STORAGE_KEY = '@asonyx/selected-plan';
 const VALID_PLAN_IDS: PlanId[] = ['free', 'basic', 'pro'];
 const VALID_BILLING_PERIODS: BillingPeriod[] = ['monthly', 'yearly'];
 
@@ -29,9 +28,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
     const loadPlan = async () => {
       try {
-        const sourceFile = PLAN_STORAGE.exists ? PLAN_STORAGE : LEGACY_PLAN_STORAGE;
-        if (sourceFile.exists) {
-          const savedPlan = (await sourceFile.text()).trim();
+        const savedPlan = await AsyncStorage.getItem(PLAN_STORAGE_KEY);
+        if (savedPlan) {
           let parsed: { planId?: unknown; billingPeriod?: unknown } | null = null;
           try {
             parsed = JSON.parse(savedPlan) as { planId?: unknown; billingPeriod?: unknown };
@@ -59,8 +57,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveChoice = useCallback(async (planId: PlanId, period: BillingPeriod) => {
-    if (!PLAN_STORAGE.exists) PLAN_STORAGE.create({ intermediates: true });
-    await PLAN_STORAGE.write(JSON.stringify({ planId, billingPeriod: period }));
+    await AsyncStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify({ planId, billingPeriod: period }));
   }, []);
 
   const selectPlan = useCallback(async (planId: PlanId) => {

@@ -19,7 +19,10 @@ const TEAL = '#24C6C9';
 const MUTED = '#667783';
 const BORDER = '#D7E4EA';
 const HELMET_BATTERY_PERCENT = 82;
-const VAULT_DIRECTORY = new Directory(Paths.document, 'asonyx-vault');
+
+function getVaultDirectory() {
+  return Platform.OS === 'web' ? null : new Directory(Paths.document, 'asonyx-vault');
+}
 
 function PhoneCameraPanel() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -46,9 +49,14 @@ function PhoneCameraPanel() {
     if (!photoUri) return;
     try {
       setSaving(true);
-      if (!VAULT_DIRECTORY.exists) VAULT_DIRECTORY.create({ intermediates: true, idempotent: true });
+      const vaultDirectory = getVaultDirectory();
+      if (!vaultDirectory) {
+        Alert.alert('Save unavailable', 'The Document Vault is available in the Android and iOS app.');
+        return;
+      }
+      if (!vaultDirectory.exists) vaultDirectory.create({ intermediates: true, idempotent: true });
       const fileName = `Ride photo ${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
-      const destination = new File(VAULT_DIRECTORY, fileName);
+      const destination = new File(vaultDirectory, fileName);
       await new File(photoUri).copy(destination);
       setCameraReady(false);
       setPhotoUri(null);

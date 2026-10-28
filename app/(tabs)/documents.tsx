@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, ScrollView, Text, TextInput,
+  ActivityIndicator, Alert, Platform, ScrollView, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -18,7 +18,10 @@ const INK = '#18232B';
 const TEAL = '#168F87';
 const MUTED = '#667783';
 const BORDER = '#D7E4EA';
-const VAULT_DIRECTORY = new Directory(Paths.document, 'asonyx-vault');
+
+function getVaultDirectory() {
+  return Platform.OS === 'web' ? null : new Directory(Paths.document, 'asonyx-vault');
+}
 
 function getKind(name: string): VaultItem['kind'] {
   return /\.(png|jpe?g|gif|webp|heic|bmp)$/i.test(name) ? 'IMAGE' : 'PDF';
@@ -43,8 +46,13 @@ export default function DocumentsScreen() {
 
   const refresh = useCallback(() => {
     try {
-      if (!VAULT_DIRECTORY.exists) VAULT_DIRECTORY.create({ intermediates: true, idempotent: true });
-      const saved = VAULT_DIRECTORY.list()
+      const vaultDirectory = getVaultDirectory();
+      if (!vaultDirectory) {
+        setItems([]);
+        return;
+      }
+      if (!vaultDirectory.exists) vaultDirectory.create({ intermediates: true, idempotent: true });
+      const saved = vaultDirectory.list()
         .filter((entry): entry is File => entry instanceof File)
         .map(file => ({ file, kind: getKind(file.name) }))
         .sort((a, b) => b.file.name.localeCompare(a.file.name));
@@ -69,7 +77,12 @@ export default function DocumentsScreen() {
   const importDocuments = async () => {
     try {
       setImporting(true);
-      if (!VAULT_DIRECTORY.exists) VAULT_DIRECTORY.create({ intermediates: true, idempotent: true });
+      const vaultDirectory = getVaultDirectory();
+      if (!vaultDirectory) {
+        Alert.alert('Vault unavailable', 'The Document Vault is available in the Android and iOS app.');
+        return;
+      }
+      if (!vaultDirectory.exists) vaultDirectory.create({ intermediates: true, idempotent: true });
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
         copyToCacheDirectory: true,
@@ -83,11 +96,11 @@ export default function DocumentsScreen() {
         const stem = dot > 0 ? baseName.slice(0, dot) : baseName;
         const extension = dot > 0 ? baseName.slice(dot) : '';
         let storedName = baseName;
-        let destination = new File(VAULT_DIRECTORY, storedName);
+        let destination = new File(vaultDirectory, storedName);
         let collision = 2;
         while (destination.exists) {
           storedName = `${stem} (${collision++})${extension}`;
-          destination = new File(VAULT_DIRECTORY, storedName);
+          destination = new File(vaultDirectory, storedName);
         }
         await new File(asset.uri).copy(destination);
       }
