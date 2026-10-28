@@ -1,0 +1,17 @@
+export const Colors = {
+  mintLight: '#F4FAF8',
+  mint: '#00D1B2',
+  mintDark: '#05A894',
+  emeraldDeep: '#062320',
+  emeraldDark: '#0B3C36',
+  emeraldMid: '#0F4F47',
+  charcoal: '#0F172A',
+  muted: '#64748B',
+  border: '#E2E8F0',
+  white: '#FFFFFF',
+  danger: '#EF4444',
+  warning: '#F59E0B',
+  success: '#10B981',
+  cardBg: '#FFFFFF',
+  overlay: 'rgba(6,35,32,0.85)',
+};
