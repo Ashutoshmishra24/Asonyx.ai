@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Search, Star, X, Check, WandSparkles,
+  Search, Star, X, Check, WandSparkles, ChevronRight,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +46,7 @@ export default function HelmetsScreen() {
   const [selectedHelmet, setSelectedHelmet] = useState<typeof HELMETS[0] | null>(null);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState('M');
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(['4K Camera', 'Sony Speaker']);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(['camera', 'speaker']);
 
   const filtered = HELMETS.filter(h => h.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -240,7 +240,6 @@ export default function HelmetsScreen() {
               <View style={{ backgroundColor: '#FFF', borderRadius: 16, padding: 14, marginBottom: 20, borderWidth: 1.5, borderColor: '#E2E8F0' }}>
                 <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', marginBottom: 8 }}>SELECTED CONFIGURATION</Text>
                 <Text style={{ color: '#0F172A', fontSize: 13, lineHeight: 20 }}>
-                  {selectedHelmet?.name} • {COLORS[selectedColor].name} • Size {selectedSize}{'\n'}
                   {`${selectedHelmet?.name ?? ''} • ${COLORS[selectedColor].name} • Size ${selectedSize}\nFeatures: ${selectedFeatureItems.map(feature => `${feature.label} (+₹${feature.price.toLocaleString('en-IN')})`).join(', ') || 'None'}\nBase helmet: ₹${selectedHelmet?.price.toLocaleString('en-IN') ?? '0'}\nExtras: ₹${featuresTotal.toLocaleString('en-IN')}\nTotal: ₹${currentPrice.toLocaleString('en-IN')}`}
                 </Text>
               </View>
@@ -272,7 +271,18 @@ export default function HelmetsScreen() {
                 <TouchableOpacity
                   onPress={() => {
                     setSelectedHelmet(null);
-                    if (selectedHelmet) router.push({ pathname: '/checkout', params: { kind: 'product', productId: String(selectedHelmet.id), model: selectedHelmet.name, price: String(selectedHelmet.price), color: COLORS[selectedColor].name, size: selectedSize } });
+                    if (selectedHelmet) router.push({
+                      pathname: '/checkout',
+                      params: {
+                        kind: 'product',
+                        productId: String(selectedHelmet.id),
+                        model: selectedHelmet.name,
+                        price: String(selectedHelmet.price),
+                        color: COLORS[selectedColor].name,
+                        size: selectedSize,
+                        addons: JSON.stringify(selectedFeatureItems.map(({ id, label, price }) => ({ id, label, price }))),
+                      },
+                    });
                   }}
                   style={{ flex: 1.5 }}
                 >

@@ -4,7 +4,7 @@ import {
   Image, type ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, Plus, ShoppingCart } from 'lucide-react-native';
+import { ArrowLeft, Home, Settings, ShoppingCart, TrendingUp, UserRound } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,7 +25,13 @@ const ADDONS = [
   { id: 'antifog', label: 'Anti-Fog Visor', description: 'Hydrophobic coating and quick-clearing visor treatment for wet rides.', price: 999, image: require('../assets/brand/feature-antifog.jpg') },
   { id: 'buckle', label: 'Quick-Release Buckle', description: 'One-touch magnetic buckle for fast on and off with gloves.', price: 799, image: require('../assets/brand/feature-buckle.jpg') },
 ];
-const ZONES = ['01', '02', '03', '04'];
+const TEAL = '#168F87';
+const ZONES = [
+  { id: '01', label: 'Shell', color: '#00D1B2' },
+  { id: '02', label: 'Visor', color: '#3B82F6' },
+  { id: '03', label: 'Accent', color: '#F59E0B' },
+  { id: '04', label: 'Tech', color: '#8B5CF6' },
+];
 const FINISHES = [
   { label: 'Matte Black', color: '#172126' },
   { label: 'White', color: '#F7F8F7' },
@@ -58,6 +64,8 @@ export default function BuilderScreen() {
   const [activeZone, setActiveZone] = useState('01');
   const [color, setColor] = useState(typeof params.color === 'string' ? params.color : 'Matte Black');
   const [size, setSize] = useState(typeof params.size === 'string' ? params.size : 'M');
+  const [visor, setVisor] = useState('Smoke');
+  const [accent, setAccent] = useState('Black');
 
   const toggle = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -72,11 +80,10 @@ export default function BuilderScreen() {
   const savings = Math.min(1100, Math.floor(addonsTotal * 0.1));
   const finalTotal = total - savings;
   const selectedAddons = ADDONS.filter(item => selected.includes(item.id));
-  const toggle = (id: string) => setSelected(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#EFF8FC' }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 245 }}>
         <View style={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={{ width: 34, height: 34, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Go back"><ArrowLeft size={18} color="#273740" /></TouchableOpacity>
           <Text style={{ fontSize: 17, fontWeight: '800', color: '#17232C' }}>Custom Builder</Text>
@@ -124,7 +131,7 @@ export default function BuilderScreen() {
         <View style={{ marginHorizontal: 14, marginBottom: 12, backgroundColor: '#FFF', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: '#E1EAEC' }}>
           <Text style={{ color: '#26363D', fontSize: 11, fontWeight: '900', marginBottom: 8 }}>PERSONALIZE YOUR BUILD</Text>
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 11 }}>
-            {ZONES.map((zone, index) => <TouchableOpacity key={zone} onPress={() => setActiveZone(zone)} accessibilityRole="button" accessibilityState={{ selected: activeZone === zone }} style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 9, backgroundColor: activeZone === zone ? '#E3F5F1' : '#F5F8F8', borderWidth: 1, borderColor: activeZone === zone ? '#77BDB4' : '#E6EDEE' }}><Text style={{ color: activeZone === zone ? TEAL : '#708087', fontSize: 9, fontWeight: '900' }}>{zone}</Text><Text style={{ color: activeZone === zone ? TEAL : '#708087', fontSize: 8, marginTop: 2 }}>{['Shell', 'Visor', 'Accent', 'Tech'][index]}</Text></TouchableOpacity>)}
+            {ZONES.map(zone => <TouchableOpacity key={zone.id} onPress={() => setActiveZone(zone.id)} accessibilityRole="button" accessibilityState={{ selected: activeZone === zone.id }} style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 9, backgroundColor: activeZone === zone.id ? '#E3F5F1' : '#F5F8F8', borderWidth: 1, borderColor: activeZone === zone.id ? '#77BDB4' : '#E6EDEE' }}><Text style={{ color: activeZone === zone.id ? TEAL : '#708087', fontSize: 9, fontWeight: '900' }}>{zone.id}</Text><Text style={{ color: activeZone === zone.id ? TEAL : '#708087', fontSize: 8, marginTop: 2 }}>{zone.label}</Text></TouchableOpacity>)}
           </View>
           {activeZone === '01' && <>
             <Text style={{ color: '#6E7B80', fontSize: 9, fontWeight: '700', marginBottom: 7 }}>SHELL FINISH · {color}</Text>
@@ -195,7 +202,7 @@ export default function BuilderScreen() {
 
       {/* Fixed Price Bar */}
       <View style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
+        position: 'absolute', bottom: 69, left: 0, right: 0,
         backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0',
         shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 16, elevation: 16,
         padding: 20, paddingBottom: 28,
@@ -221,10 +228,9 @@ export default function BuilderScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
-      <View style={{ height: 69, backgroundColor: '#FFF', borderTopWidth: 1, borderColor: '#DDE8EA', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 69, backgroundColor: '#FFF', borderTopWidth: 1, borderColor: '#DDE8EA', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
         {[{ label: 'Home', Icon: Home, route: '/(tabs)' }, { label: 'Helmet', Icon: TrendingUp, route: '/(tabs)/helmets' }, { label: 'Profile', Icon: UserRound, route: '/(tabs)/profile' }, { label: 'Settings', Icon: Settings, route: '/(tabs)/settings' }].map(({ label, Icon, route }) => <TouchableOpacity key={label} onPress={() => router.replace(route as never)} style={{ alignItems: 'center', justifyContent: 'center', minWidth: 54, gap: 3 }}><Icon size={16} color={label === 'Helmet' ? TEAL : '#78858B'} /><Text style={{ fontSize: 8, color: label === 'Helmet' ? TEAL : '#78858B', fontWeight: '600' }}>{label}</Text></TouchableOpacity>)}
       </View>
     </SafeAreaView>
   );
 }
-

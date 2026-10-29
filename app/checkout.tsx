@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ChevronDown, ChevronUp, Check, CreditCard, Truck, Smartphone, Building2, X, MapPin, Edit2, UserRound, LockKeyhole } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PayMethod = 'cod' | 'upi' | 'card' | 'netbanking' | null;
 type OrderAddon = { id: string; label: string; price: number };
@@ -42,7 +43,6 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ kind?: string; productId?: string; model?: string; price?: string; total?: string; base?: string; addonTotal?: string; savings?: string; addons?: string; color?: string; size?: string }>();
   const productPrice = Number(params.price);
-  const builderTotal = Number(params.total);
   const isProduct = params.kind === 'product' && Number.isFinite(productPrice) && productPrice > 0;
   const modelName = typeof params.model === 'string' ? params.model : 'Asonyx X-1 Custom Build';
   const addons = readAddons(params.addons);
@@ -108,7 +108,7 @@ export default function CheckoutScreen() {
     (payMethod === 'netbanking' && selectedBank !== '')
   );
 
-  const PayMethodCard = ({
+  const renderPayMethodCard = ({
     id, icon: Icon, label,
   }: { id: PayMethod; icon: any; label: string }) => {
     const active = payMethod === id;
@@ -291,10 +291,10 @@ export default function CheckoutScreen() {
           {/* Payment Methods */}
           <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A', marginBottom: 4 }}>Payment Method Preview</Text>
           <Text style={{ fontSize: 12, lineHeight: 17, color: '#64748B', marginBottom: 12 }}>No payment provider is connected. Do not enter real card or bank details; fields are for trying the screen only.</Text>
-          <PayMethodCard id="cod" icon={Truck} label="Cash on Delivery" />
-          <PayMethodCard id="upi" icon={Smartphone} label="UPI Payment" />
-          <PayMethodCard id="card" icon={CreditCard} label="Credit / Debit Card" />
-          <PayMethodCard id="netbanking" icon={Building2} label="Net Banking" />
+          {renderPayMethodCard({ id: 'cod', icon: Truck, label: 'Cash on Delivery' })}
+          {renderPayMethodCard({ id: 'upi', icon: Smartphone, label: 'UPI Payment' })}
+          {renderPayMethodCard({ id: 'card', icon: CreditCard, label: 'Credit / Debit Card' })}
+          {renderPayMethodCard({ id: 'netbanking', icon: Building2, label: 'Net Banking' })}
 
           {/* Complete order summary, placed after the payment choices like the reference screen. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: 10 }}>
