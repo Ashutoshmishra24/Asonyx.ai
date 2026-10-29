@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, Image, Text, View } from 'react-native';
+import { Animated, Image, Platform, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -13,9 +13,10 @@ export default function SplashScreen() {
   const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
+    const useNativeDriver = Platform.OS !== 'web';
     Animated.parallel([
-      Animated.spring(scale, { toValue: 1, tension: 65, friction: 8, useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, tension: 65, friction: 8, useNativeDriver }),
+      Animated.timing(opacity, { toValue: 1, duration: 450, useNativeDriver }),
       Animated.timing(progress, { toValue: 1, duration: 1550, useNativeDriver: false }),
     ]).start();
 

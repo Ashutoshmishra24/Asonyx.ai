@@ -31,10 +31,12 @@ export default function LoginScreen() {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleRedirectUri = Platform.OS === 'web' ? undefined : 'asonyxai:/oauthredirect';
   const [googleRequest, googleResponse, promptGoogle] = Google.useIdTokenAuthRequest({
     webClientId,
     androidClientId: androidClientId ?? webClientId,
     iosClientId: iosClientId ?? webClientId,
+    redirectUri: googleRedirectUri,
     selectAccount: true,
   });
 
