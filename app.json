@@ -39,8 +39,7 @@
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": false
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

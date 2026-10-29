@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Modal, TextInput, Dimensions, Image, Alert,
+  Modal, TextInput, Dimensions, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Search, Star, ShoppingCart, X, Check,
+  Search, Star, X, Check, WandSparkles,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,7 +38,6 @@ export default function HelmetsScreen() {
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(['4K Camera', 'Sony Speaker']);
-  const [cart, setCart] = useState<number[]>([]);
 
   const filtered = HELMETS.filter(h => h.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -52,30 +51,9 @@ export default function HelmetsScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: '#EEF7FD' }}>
       {/* Header */}
       <View style={{ paddingTop: 18, paddingBottom: 14, paddingHorizontal: 20, backgroundColor: '#EEF7FD' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
           <View>
             <Text style={{ color: '#15222B', fontSize: 22, fontWeight: '800' }}>All Helmets</Text>
-          </View>
-          <View style={{ position: 'relative' }}>
-            <TouchableOpacity onPress={() => {
-              if (cart.length === 0) {
-                Alert.alert('Your cart is empty', 'Open a helmet and tap Add to Cart to add an item.');
-                return;
-              }
-              const item = HELMETS.find(helmet => helmet.id === cart[0]);
-              if (!item) return;
-              Alert.alert('Your cart', `${item.name} • ₹${item.price.toLocaleString('en-IN')}`, [
-                { text: 'Keep shopping', style: 'cancel' },
-                { text: 'Checkout', onPress: () => router.push({ pathname: '/checkout', params: { kind: 'product', model: item.name, price: String(item.price) } }) },
-              ]);
-            }} accessibilityLabel="Open cart" style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D8E5EC' }}>
-              <ShoppingCart size={20} color="#00D1B2" />
-            </TouchableOpacity>
-            {cart.length > 0 && (
-              <View style={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: 9, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '800' }}>{cart.length}</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -238,22 +216,34 @@ export default function HelmetsScreen() {
                 </Text>
               </View>
 
-              {/* Add to Cart + Buy */}
+              {/* Direct purchase + custom builder */}
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   onPress={() => {
-                    if (selectedHelmet) setCart([selectedHelmet.id]);
-                    if (selectedHelmet) Alert.alert('Added to preview cart', `${selectedHelmet.name} was added. The cart stays in memory while this app is open.`);
+                    if (selectedHelmet) {
+                      router.push({
+                        pathname: '/builder',
+                        params: {
+                          productId: String(selectedHelmet.id),
+                          model: selectedHelmet.name,
+                          base: String(selectedHelmet.price),
+                          color: COLORS[selectedColor].name,
+                          size: selectedSize,
+                        },
+                      });
+                    }
                     setSelectedHelmet(null);
                   }}
-                  style={{ flex: 1, height: 52, borderRadius: 14, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#00D1B2', alignItems: 'center', justifyContent: 'center' }}
+                  accessibilityLabel={`Customize ${selectedHelmet?.name ?? 'helmet'}`}
+                  style={{ flex: 1, height: 52, borderRadius: 14, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#00D1B2', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}
                 >
-                  <Text style={{ color: '#00D1B2', fontWeight: '800', fontSize: 14 }}>Add to Cart</Text>
+                  <WandSparkles size={16} color="#00A995" />
+                  <Text style={{ color: '#00A995', fontWeight: '800', fontSize: 14 }}>Customize</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
                     setSelectedHelmet(null);
-                    if (selectedHelmet) router.push({ pathname: '/checkout', params: { kind: 'product', model: selectedHelmet.name, price: String(selectedHelmet.price) } });
+                    if (selectedHelmet) router.push({ pathname: '/checkout', params: { kind: 'product', productId: String(selectedHelmet.id), model: selectedHelmet.name, price: String(selectedHelmet.price), color: COLORS[selectedColor].name, size: selectedSize } });
                   }}
                   style={{ flex: 1.5 }}
                 >

@@ -1,14 +1,19 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Image,
+  Image, type ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Plus, ShoppingCart } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const BASE_PRICE = 9999;
+const PRODUCT_IMAGES: Record<string, ImageSourcePropType> = {
+  '1': require('../assets/brand/helmet-detail-pro.jpg'),
+  '2': require('../assets/brand/helmet-detail-urban.jpg'),
+  '3': require('../assets/brand/helmet-detail-sport.jpg'),
+  '4': require('../assets/brand/helmet-detail-touring.jpg'),
+};
 
 const ADDONS = [
   { id: 'camera', label: '4K Action Camera', price: 2499, image: require('../assets/brand/feature-camera.jpg'), zone: '01' },
@@ -30,10 +35,16 @@ const ZONES = [
 
 export default function BuilderScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ productId?: string; model?: string; base?: string; color?: string; size?: string }>();
+  const parsedBasePrice = Number(params.base);
+  const basePrice = Number.isFinite(parsedBasePrice) && parsedBasePrice > 0 ? parsedBasePrice : 9999;
+  const productId = typeof params.productId === 'string' ? params.productId : '1';
+  const modelName = typeof params.model === 'string' ? params.model : 'Pro X1';
+  const productImage = PRODUCT_IMAGES[productId] ?? require('../assets/brand/builder-helmet.jpg');
   const [selected, setSelected] = useState<string[]>([]);
   const [activeZone, setActiveZone] = useState('01');
-  const [color, setColor] = useState('Matte Black');
-  const [size, setSize] = useState('M');
+  const [color, setColor] = useState(typeof params.color === 'string' ? params.color : 'Matte Black');
+  const [size, setSize] = useState(typeof params.size === 'string' ? params.size : 'M');
 
   const toggle = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -44,7 +55,7 @@ export default function BuilderScreen() {
     [selected]
   );
 
-  const total = BASE_PRICE + addonsTotal;
+  const total = basePrice + addonsTotal;
   const savings = Math.min(1100, Math.floor(addonsTotal * 0.1));
   const finalTotal = total - savings;
   const selectedAddons = ADDONS.filter(addon => selected.includes(addon.id));
@@ -68,7 +79,7 @@ export default function BuilderScreen() {
           <View style={{ backgroundColor: '#FFF', borderRadius: 20, padding: 16, borderWidth: 1.5, borderColor: '#E2E8F0' }}>
             {/* Helmet Visual */}
             <View style={{ alignItems: 'center', marginBottom: 16, position: 'relative' }}>
-              <Image source={require('../assets/brand/builder-helmet.jpg')} resizeMode="cover" style={{ width: '100%', height: 160, borderRadius: 14 }} />
+              <Image source={productImage} resizeMode="cover" style={{ width: '100%', height: 160, borderRadius: 14 }} />
               {ZONES.map((zone, index) => <TouchableOpacity key={zone.id} onPress={() => setActiveZone(zone.id)} accessibilityLabel={`Choose ${zone.label}`} style={{ position: 'absolute', top: index < 2 ? 10 : 106, left: index % 2 === 0 ? 10 : undefined, right: index % 2 === 1 ? 10 : undefined, width: 26, height: 26, borderRadius: 8, backgroundColor: `${zone.color}28`, borderWidth: 1, borderColor: zone.color, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: zone.color, fontSize: 9, fontWeight: '900' }}>{zone.id}</Text></TouchableOpacity>)}
             </View>
 
@@ -155,9 +166,9 @@ export default function BuilderScreen() {
             <View style={{ backgroundColor: '#E5F6F4', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 }}><Text style={{ color: '#168F87', fontSize: 9, fontWeight: '800' }}>PREVIEW</Text></View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Image source={require('../assets/brand/builder-helmet.jpg')} resizeMode="cover" style={{ width: 64, height: 58, borderRadius: 11, marginRight: 11 }} />
+            <Image source={productImage} resizeMode="cover" style={{ width: 64, height: 58, borderRadius: 11, marginRight: 11 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#17232C', fontSize: 13, fontWeight: '800' }}>AsonyxAI Pro X1</Text>
+              <Text style={{ color: '#17232C', fontSize: 13, fontWeight: '800' }}>AsonyxAI {modelName}</Text>
               <Text style={{ color: '#64748B', fontSize: 10, marginTop: 4 }}>{color} shell · Size {size} · {selectedAddons.length} features</Text>
             </View>
             <Text style={{ color: '#168F87', fontSize: 9, fontWeight: '800' }}>CUSTOM</Text>
@@ -170,7 +181,7 @@ export default function BuilderScreen() {
           )) : <Text style={{ color: '#64748B', fontSize: 11, marginBottom: 6 }}>No add-on features selected</Text>}
 
           <View style={{ height: 1, backgroundColor: '#E7EDF0', marginVertical: 8 }} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Base model</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{BASE_PRICE.toLocaleString('en-IN')}</Text></View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Base model</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{basePrice.toLocaleString('en-IN')}</Text></View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Feature bundle</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{addonsTotal.toLocaleString('en-IN')}</Text></View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#168F87', fontSize: 11 }}>Builder bundle savings</Text><Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700' }}>−₹{savings.toLocaleString('en-IN')}</Text></View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Standard delivery</Text><Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700' }}>FREE*</Text></View>
@@ -189,7 +200,7 @@ export default function BuilderScreen() {
       }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <View>
-            <Text style={{ color: '#64748B', fontSize: 12 }}>Base ₹{BASE_PRICE.toLocaleString('en-IN')} + {selected.length} add-ons</Text>
+            <Text style={{ color: '#64748B', fontSize: 12 }}>Base ₹{basePrice.toLocaleString('en-IN')} + {selected.length} add-ons</Text>
             {savings > 0 && <Text style={{ color: '#10B981', fontSize: 11, fontWeight: '600' }}>💰 Bundle savings: ₹{savings.toLocaleString('en-IN')}</Text>}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
@@ -197,14 +208,14 @@ export default function BuilderScreen() {
             <Text style={{ fontSize: 22, fontWeight: '900', color: '#0F172A' }}>₹{finalTotal.toLocaleString('en-IN')}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => router.push({ pathname: '/checkout', params: { kind: 'builder', model: 'AsonyxAI Pro X1', color, size, base: String(BASE_PRICE), addonTotal: String(addonsTotal), savings: String(savings), addons: JSON.stringify(selectedAddons.map(({ id, label, price }) => ({ id, label, price }))), total: String(finalTotal) } })} activeOpacity={0.85}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/checkout', params: { kind: 'builder', productId, model: `AsonyxAI ${modelName}`, color, size, base: String(basePrice), addonTotal: String(addonsTotal), savings: String(savings), addons: JSON.stringify(selectedAddons.map(({ id, label, price }) => ({ id, label, price }))), total: String(finalTotal) } })} activeOpacity={0.85}>
           <LinearGradient
             colors={['#00D1B2', '#05A894']}
             style={{ borderRadius: 14, height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           >
             <ShoppingCart size={18} color="#FFF" />
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>Buy Now – ₹{finalTotal.toLocaleString('en-IN')}</Text>
+            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>Continue to Review • ₹{finalTotal.toLocaleString('en-IN')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

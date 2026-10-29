@@ -3,12 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import {
-  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
-  signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
   type Auth,
@@ -21,7 +19,6 @@ type AuthContextValue = {
   initializing: boolean;
   createAccount: (email: string, password: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signInWithGoogleIdToken: (idToken: string) => Promise<void>;
   signOutUser: () => Promise<void>;
 };
 
@@ -69,9 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signInWithEmail(email, password) {
       await signInWithEmailAndPassword(firebaseAuth, email, password);
     },
-    async signInWithGoogleIdToken(idToken) {
-      await signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken));
-    },
     async signOutUser() {
       await signOut(firebaseAuth);
     },
@@ -95,7 +89,6 @@ export function getAuthErrorMessage(error: unknown) {
     case 'auth/invalid-credential': return 'The email or password is incorrect.';
     case 'auth/user-disabled': return 'This account has been disabled.';
     case 'auth/network-request-failed': return 'Check your internet connection and try again.';
-    case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.';
     default: return value.message?.replace(/^Firebase:\s*/, '').replace(/\s*\(auth\/.+\)\.?$/, '') || 'Authentication failed. Please try again.';
   }
 }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   Image, View, Text, ScrollView, TouchableOpacity,
-  TextInput, Modal,
+  TextInput, Modal, type ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ChevronDown, ChevronUp, Check, CreditCard, Truck, Smartphone, Building2, X, MapPin, Edit2, UserRound, LockKeyhole } from 'lucide-react-native';
@@ -13,6 +13,12 @@ type PayMethod = 'cod' | 'upi' | 'card' | 'netbanking' | null;
 type OrderAddon = { id: string; label: string; price: number };
 
 const BANKS = ['HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra', 'Punjab National Bank'];
+const PRODUCT_IMAGES: Record<string, ImageSourcePropType> = {
+  '1': require('../assets/brand/helmet-detail-pro.jpg'),
+  '2': require('../assets/brand/helmet-detail-urban.jpg'),
+  '3': require('../assets/brand/helmet-detail-sport.jpg'),
+  '4': require('../assets/brand/helmet-detail-touring.jpg'),
+};
 
 function readAddons(value: string | string[] | undefined): OrderAddon[] {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -36,7 +42,7 @@ function readAddons(value: string | string[] | undefined): OrderAddon[] {
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ kind?: string; model?: string; price?: string; total?: string; base?: string; addonTotal?: string; savings?: string; addons?: string; color?: string; size?: string }>();
+  const params = useLocalSearchParams<{ kind?: string; productId?: string; model?: string; price?: string; total?: string; base?: string; addonTotal?: string; savings?: string; addons?: string; color?: string; size?: string }>();
   const productPrice = Number(params.price);
   const builderTotal = Number(params.total);
   const isProduct = params.kind === 'product' && Number.isFinite(productPrice) && productPrice > 0;
@@ -51,6 +57,8 @@ export default function CheckoutScreen() {
   const total = isProduct ? productPrice : Number.isFinite(builderTotal) && builderTotal > 0 ? builderTotal : baseModel + addonTotal - savings;
   const buildColor = typeof params.color === 'string' ? params.color : 'Matte Black';
   const buildSize = typeof params.size === 'string' ? params.size : 'M';
+  const productId = typeof params.productId === 'string' ? params.productId : '1';
+  const productImage = PRODUCT_IMAGES[productId] ?? require('../assets/brand/builder-helmet.jpg');
   const [payMethod, setPayMethod] = useState<PayMethod>(null);
   const [upi, setUpi] = useState('');
   const [cardNum, setCardNum] = useState('');
@@ -238,11 +246,11 @@ export default function CheckoutScreen() {
             <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#0E4140', borderWidth: 3, borderColor: '#B6E4E0' }} />
           </View>
           <View style={{ backgroundColor: '#FFFFFF', borderRadius: 19, borderWidth: 1, borderColor: '#D8E5EC', padding: 11, flexDirection: 'row', alignItems: 'center' }}>
-            <Image source={isProduct ? require('../assets/brand/helmet-detail-urban.jpg') : require('../assets/brand/builder-helmet.jpg')} resizeMode="cover" style={{ width: 88, height: 82, borderRadius: 14, marginRight: 11 }} />
+            <Image source={productImage} resizeMode="cover" style={{ width: 88, height: 82, borderRadius: 14, marginRight: 11 }} />
             <View style={{ flex: 1 }}>
               <View style={{ alignSelf: 'flex-start', backgroundColor: '#E5F6F4', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, marginBottom: 5 }}><Text style={{ color: '#168F87', fontSize: 8, fontWeight: '900' }}>{isProduct ? 'HELMET' : 'CUSTOM BUILD'}</Text></View>
               <Text numberOfLines={1} style={{ color: '#17232C', fontSize: 14, fontWeight: '900' }}>{modelName}</Text>
-              <Text numberOfLines={2} style={{ color: '#64748B', fontSize: 10, lineHeight: 14, marginTop: 3 }}>{isProduct ? 'Standard configuration' : `${buildColor} shell · Smoke visor · Size ${buildSize}`}</Text>
+              <Text numberOfLines={2} style={{ color: '#64748B', fontSize: 10, lineHeight: 14, marginTop: 3 }}>{isProduct ? `${buildColor} shell · Size ${buildSize} · Standard features` : `${buildColor} shell · Smoke visor · Size ${buildSize}`}</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 7 }}>
                 <Text style={{ color: '#64748B', fontSize: 9 }}>Payable in preview</Text>
                 <Text style={{ color: '#168F87', fontSize: 17, fontWeight: '900' }}>₹{total.toLocaleString('en-IN')}</Text>
@@ -297,7 +305,7 @@ export default function CheckoutScreen() {
               <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#E4F5F3', alignItems: 'center', justifyContent: 'center', marginRight: 9 }}><Check size={16} color="#168F87" /></View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#17232C', fontSize: 13, fontWeight: '900' }}>{modelName}</Text>
-                <Text style={{ color: '#64748B', fontSize: 10, marginTop: 3 }}>{isProduct ? 'Standard configuration' : `${buildColor} shell · Smoke visor · Size ${buildSize}`}</Text>
+                <Text style={{ color: '#64748B', fontSize: 10, marginTop: 3 }}>{isProduct ? `${buildColor} shell · Size ${buildSize} · Standard features` : `${buildColor} shell · Smoke visor · Size ${buildSize}`}</Text>
               </View>
               <Text style={{ color: '#168F87', fontSize: 9, fontWeight: '800' }}>{isProduct ? '1 ITEM' : `${addons.length + 1} ITEMS`}</Text>
             </View>
