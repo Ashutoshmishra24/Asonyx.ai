@@ -14,11 +14,13 @@ import math
 import os
 import re
 import signal
+import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
+
+from twilio_services import TwilioService
 
 LOGGER = logging.getLogger("asonyx.helmet")
 E164_PATTERN = re.compile(r"^\+[1-9]\d{7,14}$")
@@ -276,39 +278,6 @@ class Settings:
                 raise ValueError(f"Phone number must use E.164 format, got {number!r}")
 
 
-class TwilioNotifier:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        self._client = None
-
-    def send_tilt_alert(self, angle_degrees: float) -> None:
-        timestamp = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
-        body = (
-            f"Asonyx prototype alert: {self.settings.owner_name}'s helmet remained tilted "
-            f"at about {angle_degrees:.0f} degrees. Time: {timestamp}. "
-            "Please check on them. This prototype does not contact emergency services."
-        )
-        if self.settings.dry_run:
-            LOGGER.warning("DRY RUN - would send SMS to %s: %s", self.settings.emergency_numbers, body)
-            return
-
-        if self._client is None:
-            from twilio.rest import Client
-
-            self._client = Client(self.settings.account_sid, self.settings.auth_token)
-
-        for recipient in self.settings.emergency_numbers:
-            try:
-                message = self._client.messages.create(
-                    body=body,
-                    from_=self.settings.from_number,
-                    to=recipient,
-                )
-                LOGGER.info("Queued Twilio message %s for %s", message.sid, recipient)
-            except Exception:
-                LOGGER.exception("Could not send Twilio alert to %s", recipient)
-
-
 def calibrate(sensor: AccelerationSensor, samples: int, interval: float) -> Vector3:
     LOGGER.info("Calibrating: keep the helmet upright and still (%d samples)", samples)
     total_x = total_y = total_z = 0.0
@@ -332,18 +301,18 @@ def calibrate(sensor: AccelerationSensor, samples: int, interval: float) -> Vect
     return reference
 
 
-def run_monitor(settings: Settings) -> None:
+def run_monitor(
+    settings: Settings,
+    stop_event: threading.Event | None = None,
+    notifier: TwilioService | None = None,
+) -> None:
     sensor: AccelerationSensor | None = None
     buzzer: AlarmOutput = DisabledBuzzer()
-    stop_requested = False
-
-    def request_stop(signum: int, frame: object) -> None:
-        del signum, frame
-        nonlocal stop_requested
-        stop_requested = True
-
-    signal.signal(signal.SIGTERM, request_stop)
-    signal.signal(signal.SIGINT, request_stop)
+    owns_stop_event = stop_event is None
+    stop_event = stop_event or threading.Event()
+    if owns_stop_event:
+        signal.signal(signal.SIGTERM, lambda *_: stop_event.set())
+        signal.signal(signal.SIGINT, lambda *_: stop_event.set())
 
     try:
         sensor = ADXL345Sensor(settings.i2c_bus, settings.i2c_address)
@@ -357,7 +326,7 @@ def run_monitor(settings: Settings) -> None:
             reset_hold_seconds=settings.reset_hold_seconds,
             cooldown_seconds=settings.alert_cooldown_seconds,
         )
-        notifier = TwilioNotifier(settings)
+        notifier = notifier or TwilioService()
         LOGGER.info(
             "Monitoring started: threshold=%.1f degrees, hold=%.1fs, dry_run=%s",
             settings.tilt_threshold_degrees,
@@ -367,7 +336,7 @@ def run_monitor(settings: Settings) -> None:
 
         consecutive_sensor_errors = 0
         last_log_time = 0.0
-        while not stop_requested:
+        while not stop_event.is_set():
             loop_started = time.monotonic()
             try:
                 acceleration = sensor.read_acceleration()
@@ -399,10 +368,14 @@ def run_monitor(settings: Settings) -> None:
 
             if decision.notify:
                 LOGGER.warning("Sustained helmet tilt detected at %.1f degrees", angle)
-                notifier.send_tilt_alert(angle)
+                for number in settings.emergency_numbers:
+                    try:
+                        notifier.send_accident_sms(number)
+                    except Exception:
+                        LOGGER.exception("Could not send accident alert to %s", number)
 
             elapsed = time.monotonic() - loop_started
-            time.sleep(max(0.0, settings.sample_interval_seconds - elapsed))
+            stop_event.wait(max(0.0, settings.sample_interval_seconds - elapsed))
     finally:
         buzzer.close()
         if sensor is not None:

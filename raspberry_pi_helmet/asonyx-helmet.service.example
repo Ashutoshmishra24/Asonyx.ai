@@ -1,0 +1,16 @@
+[Unit]
+Description=Asonyx smart helmet prototype monitor
+Wants=network-online.target
+After=network-online.target sound.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Asonyx.ai/raspberry_pi_helmet
+ExecStart=/home/pi/Asonyx.ai/raspberry_pi_helmet/.venv/bin/python smart_helmet_monitor.py
+Restart=always
+RestartSec=2
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

@@ -28,6 +28,8 @@ yarn-error.*
 
 # Python
 __pycache__/
+raspberry_pi_helmet/models/
+raspberry_pi_helmet/media/*.mp3
 *.py[cod]
 .venv/
 
