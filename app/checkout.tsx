@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/static-components -- Payment method panels intentionally close over this preview form's local state. */
 import { useState } from 'react';
 import {
   Image, View, Text, ScrollView, TouchableOpacity,
@@ -6,7 +5,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ChevronDown, ChevronUp, Check, CreditCard, Truck, Smartphone, Building2, X, MapPin, Edit2, UserRound, LockKeyhole } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 type PayMethod = 'cod' | 'upi' | 'card' | 'netbanking' | null;
@@ -52,9 +50,12 @@ export default function CheckoutScreen() {
   const parsedAddonTotal = Number(params.addonTotal);
   const parsedSavings = Number(params.savings);
   const baseModel = isProduct ? productPrice : Number.isFinite(parsedBase) && parsedBase > 0 ? parsedBase : 9999;
-  const addonTotal = isProduct ? 0 : Number.isFinite(parsedAddonTotal) && parsedAddonTotal >= 0 ? parsedAddonTotal : addons.reduce((sum, addon) => sum + addon.price, 0);
+  const addonTotal = addons.length > 0
+    ? addons.reduce((sum, addon) => sum + addon.price, 0)
+    : Number.isFinite(parsedAddonTotal) && parsedAddonTotal >= 0 ? parsedAddonTotal : 0;
   const savings = isProduct ? 0 : Number.isFinite(parsedSavings) && parsedSavings >= 0 ? parsedSavings : Math.min(1100, Math.floor(addonTotal * 0.1));
-  const total = isProduct ? productPrice : Number.isFinite(builderTotal) && builderTotal > 0 ? builderTotal : baseModel + addonTotal - savings;
+  const subtotal = baseModel + addonTotal;
+  const total = Math.max(0, subtotal - savings);
   const buildColor = typeof params.color === 'string' ? params.color : 'Matte Black';
   const buildSize = typeof params.size === 'string' ? params.size : 'M';
   const productId = typeof params.productId === 'string' ? params.productId : '1';
@@ -231,7 +232,7 @@ export default function CheckoutScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ paddingHorizontal: 17, paddingTop: 8, paddingBottom: 13 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 }}>
-            <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace(isProduct ? '/helmets' : '/builder')} accessibilityLabel={isProduct ? 'Back to helmets' : 'Back to builder'} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8E5EC', alignItems: 'center', justifyContent: 'center' }}>
+            <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Back to builder" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8E5EC', alignItems: 'center', justifyContent: 'center' }}>
               <ArrowLeft size={19} color="#17232C" />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
@@ -298,7 +299,7 @@ export default function CheckoutScreen() {
           {/* Complete order summary, placed after the payment choices like the reference screen. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: 10 }}>
             <Text style={{ flex: 1, color: '#17232C', fontSize: 17, fontWeight: '900' }}>Order summary</Text>
-            {!isProduct && <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/builder')} accessibilityLabel="Edit helmet build" style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Edit2 size={13} color="#168F87" /><Text style={{ color: '#168F87', fontSize: 9, fontWeight: '900' }}>EDIT BUILD</Text></TouchableOpacity>}
+            {!isProduct && <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Edit2 size={13} color="#168F87" /><Text style={{ color: '#168F87', fontSize: 9, fontWeight: '900' }}>EDIT BUILD</Text></TouchableOpacity>}
           </View>
           <View style={{ backgroundColor: '#FFFFFF', borderRadius: 17, borderWidth: 1, borderColor: '#D8E5EC', padding: 14, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 11 }}>
@@ -307,22 +308,21 @@ export default function CheckoutScreen() {
                 <Text style={{ color: '#17232C', fontSize: 13, fontWeight: '900' }}>{modelName}</Text>
                 <Text style={{ color: '#64748B', fontSize: 10, marginTop: 3 }}>{isProduct ? `${buildColor} shell · Size ${buildSize} · Standard features` : `${buildColor} shell · Smoke visor · Size ${buildSize}`}</Text>
               </View>
-              <Text style={{ color: '#168F87', fontSize: 9, fontWeight: '800' }}>{isProduct ? '1 ITEM' : `${addons.length + 1} ITEMS`}</Text>
+              <Text style={{ color: '#168F87', fontSize: 9, fontWeight: '800' }}>{addons.length + 1} ITEMS</Text>
             </View>
 
-            {!isProduct && addons.length > 0 && (
+            {addons.length > 0 && (
               <View style={{ backgroundColor: '#F5FAFB', borderRadius: 11, padding: 10, marginBottom: 10 }}>
                 <Text style={{ color: '#64748B', fontSize: 9, fontWeight: '800', marginBottom: 4 }}>SELECTED FEATURES</Text>
-                {addons.map(addon => <Text key={addon.id} style={{ color: '#52616B', fontSize: 10, lineHeight: 16 }}>• {addon.label}</Text>)}
+                {addons.map(addon => <View key={addon.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ flex: 1, color: '#52616B', fontSize: 10, lineHeight: 16 }}>{addon.label}</Text><Text style={{ color: '#168F87', fontSize: 10, fontWeight: '800' }}>+₹{addon.price.toLocaleString('en-IN')}</Text></View>)}
               </View>
             )}
 
             <View style={{ height: 1, backgroundColor: '#E7EDF0', marginBottom: 7 }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Base model</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{baseModel.toLocaleString('en-IN')}</Text></View>
-            {!isProduct && <>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Feature bundle</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{addonTotal.toLocaleString('en-IN')}</Text></View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#168F87', fontSize: 11 }}>Builder bundle savings</Text><Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700' }}>−₹{savings.toLocaleString('en-IN')}</Text></View>
-            </>}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Extras subtotal ({addons.length})</Text><Text style={{ color: '#17232C', fontSize: 11, fontWeight: '700' }}>₹{addonTotal.toLocaleString('en-IN')}</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 1, borderColor: '#E7EDF0', marginTop: 3 }}><Text style={{ color: '#17232C', fontSize: 12, fontWeight: '800' }}>Subtotal</Text><Text style={{ color: '#17232C', fontSize: 12, fontWeight: '800' }}>₹{subtotal.toLocaleString('en-IN')}</Text></View>
+            {savings > 0 && <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#168F87', fontSize: 11 }}>Builder bundle savings</Text><Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700' }}>−₹{savings.toLocaleString('en-IN')}</Text></View>}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: '#64748B', fontSize: 11 }}>Standard delivery</Text><Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700' }}>FREE</Text></View>
             <Text style={{ color: '#81919A', fontSize: 9, marginTop: 1 }}>Displayed prices are an app preview, inclusive of applicable taxes.</Text>
             <View style={{ height: 1, backgroundColor: '#E7EDF0', marginVertical: 9 }} />

@@ -16,22 +16,35 @@ const PRODUCT_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 const ADDONS = [
-  { id: 'camera', label: '4K Action Camera', price: 2499, image: require('../assets/brand/feature-camera.jpg'), zone: '01' },
-  { id: 'storage', label: 'Integrated Storage (64GB)', price: 1299, image: require('../assets/brand/feature-storage.jpg'), zone: '01' },
-  { id: 'audio', label: 'Premium Sound System', price: 2999, image: require('../assets/brand/feature-sound.jpg'), zone: '03' },
-  { id: 'brake', label: 'Rear Smart Brake Lighting', price: 1499, image: require('../assets/brand/feature-lighting.jpg'), zone: '04' },
-  { id: 'hud', label: 'Turn-by-Turn Visor HUD', price: 1999, image: require('../assets/brand/feature-navigation.jpg'), zone: '02' },
-  { id: 'vent', label: 'Active Ventilation', price: 1799, image: require('../assets/brand/feature-ventilation.jpg'), zone: '01' },
-  { id: 'antifog', label: 'Anti-Fog Visor', price: 999, image: require('../assets/brand/feature-antifog.jpg'), zone: '02' },
-  { id: 'buckle', label: 'Quick-Release Buckle', price: 799, image: require('../assets/brand/feature-buckle.jpg'), zone: '04' },
+  { id: 'camera', label: 'Camera', description: '4K action camera with wide-angle lens and built-in mounting.', price: 2499, image: require('../assets/brand/feature-camera.jpg') },
+  { id: 'storage', label: 'Storage', description: 'Integrated shell compartment for small essentials and charging cables.', price: 1299, image: require('../assets/brand/feature-storage.jpg') },
+  { id: 'audio', label: 'Sound System', description: 'Premium audio speakers with voice assistant support and clear call quality.', price: 2999, image: require('../assets/brand/feature-sound.jpg') },
+  { id: 'brake', label: 'Rear Lighting', description: 'Smart brake light and visibility strip for improved rider safety.', price: 1499, image: require('../assets/brand/feature-lighting.jpg') },
+  { id: 'hud', label: 'Turn-by-Turn Nav', description: 'Voice-guided directions projected onto the visor for safer riding.', price: 1999, image: require('../assets/brand/feature-navigation.jpg') },
+  { id: 'vent', label: 'Active Ventilation', description: 'Smart airflow system with automatic cooling and humidity control.', price: 1799, image: require('../assets/brand/feature-ventilation.jpg') },
+  { id: 'antifog', label: 'Anti-Fog Visor', description: 'Hydrophobic coating and quick-clearing visor treatment for wet rides.', price: 999, image: require('../assets/brand/feature-antifog.jpg') },
+  { id: 'buckle', label: 'Quick-Release Buckle', description: 'One-touch magnetic buckle for fast on and off with gloves.', price: 799, image: require('../assets/brand/feature-buckle.jpg') },
 ];
-
-const ZONES = [
-  { id: '01', label: 'Shell Finish', color: '#00D1B2' },
-  { id: '02', label: 'Visor Tint', color: '#3B82F6' },
-  { id: '03', label: 'Earcups', color: '#F59E0B' },
-  { id: '04', label: 'Electronics', color: '#8B5CF6' },
+const ZONES = ['01', '02', '03', '04'];
+const FINISHES = [
+  { label: 'Matte Black', color: '#172126' },
+  { label: 'White', color: '#F7F8F7' },
+  { label: 'Gunmetal Gray', color: '#778188' },
+  { label: 'Teal', color: '#26B9B2' },
 ];
+const VISORS = [
+  { label: 'Smoke', color: '#343B3E' },
+  { label: 'Clear', color: '#DBEFF1' },
+  { label: 'Blue', color: '#4387B9' },
+  { label: 'Gold', color: '#D1A956' },
+];
+const ACCENTS = [
+  { label: 'Black', color: '#252A2B' },
+  { label: 'Silver', color: '#AEB9BC' },
+  { label: 'Teal', color: '#26B9B2' },
+  { label: 'Red', color: '#CB5151' },
+];
+const formatPrice = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
 export default function BuilderScreen() {
   const router = useRouter();
@@ -58,19 +71,15 @@ export default function BuilderScreen() {
   const total = basePrice + addonsTotal;
   const savings = Math.min(1100, Math.floor(addonsTotal * 0.1));
   const finalTotal = total - savings;
-  const selectedAddons = ADDONS.filter(addon => selected.includes(addon.id));
+  const selectedAddons = ADDONS.filter(item => selected.includes(item.id));
+  const toggle = (id: string) => setSelected(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#EEF7FD' }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 210 }}>
-        {/* Header */}
-        <View style={{ paddingTop: 16, paddingBottom: 14, paddingHorizontal: 20 }}>
-          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/helmets')} accessibilityLabel="Back to helmets" style={{ marginBottom: 12 }}>
-            <Text style={{ color: '#168F87', fontSize: 13, fontWeight: '700' }}>← Back to Store</Text>
-          </TouchableOpacity>
-          <Text style={{ color: '#52616B', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>CUSTOM BUILDER</Text>
-          <Text style={{ color: '#17232C', fontSize: 22, fontWeight: '800', marginTop: 4 }}>Design Your Helmet</Text>
-          <Text style={{ color: '#64748B', fontSize: 13, marginTop: 4 }}>Choose a finish, size and optional features</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#EFF8FC' }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}>
+        <View style={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ width: 34, height: 34, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Go back"><ArrowLeft size={18} color="#273740" /></TouchableOpacity>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: '#17232C' }}>Custom Builder</Text>
         </View>
 
         {/* Zone Blueprint */}
@@ -104,58 +113,51 @@ export default function BuilderScreen() {
               ))}
             </View>
           </View>
-          <Text style={{ color: '#64748B', fontSize: 11, lineHeight: 16, marginTop: 8 }}>Choose a base finish, then personalize the shell, visor tint, earcups and electronics.</Text>
+          <Text style={{ color: '#738187', fontSize: 10, lineHeight: 15, marginTop: 11 }}>Start with a base model, then personalize shell finish, visor tint, earcup accents, and electronics in the next steps.</Text>
         </View>
 
-        <View style={{ paddingHorizontal: 20, marginBottom: 6 }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: '#17232C', marginBottom: 8 }}>Shell finish</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {['Matte Black', 'White', 'Gunmetal Gray', 'Teal'].map((finish, index) => <TouchableOpacity key={finish} onPress={() => setColor(finish)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF', padding: 8, borderRadius: 10, borderWidth: 1, borderColor: color === finish ? '#168F87' : '#D8E5EC' }}><View style={{ width: 15, height: 15, borderRadius: 8, backgroundColor: ['#152126', '#F8FAFC', '#78828A', '#26C6C9'][index], borderWidth: 1, borderColor: '#CCD8DE' }} /><Text style={{ color: '#31414A', fontSize: 10, fontWeight: color === finish ? '700' : '500' }}>{finish}</Text></TouchableOpacity>)}
+        <View style={{ marginHorizontal: 18, marginTop: 13, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+          <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#D9F1EC', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 9, color: TEAL, fontWeight: '900' }}>1</Text></View>
+          <Text style={{ color: TEAL, fontSize: 11, fontWeight: '800' }}>Step 1 of 4 · Choose Base Model</Text>
+        </View>
+
+        <View style={{ marginHorizontal: 14, marginBottom: 12, backgroundColor: '#FFF', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: '#E1EAEC' }}>
+          <Text style={{ color: '#26363D', fontSize: 11, fontWeight: '900', marginBottom: 8 }}>PERSONALIZE YOUR BUILD</Text>
+          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 11 }}>
+            {ZONES.map((zone, index) => <TouchableOpacity key={zone} onPress={() => setActiveZone(zone)} accessibilityRole="button" accessibilityState={{ selected: activeZone === zone }} style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 9, backgroundColor: activeZone === zone ? '#E3F5F1' : '#F5F8F8', borderWidth: 1, borderColor: activeZone === zone ? '#77BDB4' : '#E6EDEE' }}><Text style={{ color: activeZone === zone ? TEAL : '#708087', fontSize: 9, fontWeight: '900' }}>{zone}</Text><Text style={{ color: activeZone === zone ? TEAL : '#708087', fontSize: 8, marginTop: 2 }}>{['Shell', 'Visor', 'Accent', 'Tech'][index]}</Text></TouchableOpacity>)}
           </View>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: '#17232C', marginTop: 13, marginBottom: 8 }}>Helmet size</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>{['S', 'M', 'L', 'XL'].map(item => <TouchableOpacity key={item} onPress={() => setSize(item)} style={{ width: 42, height: 35, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: size === item ? '#168F87' : '#FFF', borderWidth: 1, borderColor: size === item ? '#168F87' : '#D8E5EC' }}><Text style={{ color: size === item ? '#FFF' : '#31414A', fontWeight: '700', fontSize: 12 }}>{item}</Text></TouchableOpacity>)}</View>
-          <Text style={{ color: '#168F87', fontSize: 11, fontWeight: '700', marginTop: 12 }}>Selected: {color} • Size {size}</Text>
+          {activeZone === '01' && <>
+            <Text style={{ color: '#6E7B80', fontSize: 9, fontWeight: '700', marginBottom: 7 }}>SHELL FINISH · {color}</Text>
+            <View style={{ flexDirection: 'row', gap: 7 }}>{FINISHES.map(finish => <TouchableOpacity key={finish.label} onPress={() => setColor(finish.label)} accessibilityRole="button" accessibilityState={{ selected: color === finish.label }} style={{ flex: 1, alignItems: 'center', gap: 4 }}><View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: finish.color, borderWidth: color === finish.label ? 2 : 1, borderColor: color === finish.label ? TEAL : '#D8E1E3' }} /> <Text numberOfLines={1} style={{ color: '#66767D', fontSize: 7 }}>{finish.label}</Text></TouchableOpacity>)}</View>
+            <Text style={{ color: '#6E7B80', fontSize: 9, fontWeight: '700', marginTop: 10, marginBottom: 6 }}>HELMET SIZE · {size}</Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>{['S', 'M', 'L', 'XL'].map(option => <TouchableOpacity key={option} onPress={() => setSize(option)} accessibilityRole="button" accessibilityState={{ selected: size === option }} style={{ flex: 1, height: 29, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: size === option ? '#E3F5F1' : '#F7F9F9', borderWidth: 1, borderColor: size === option ? '#77BDB4' : '#E6EDEE' }}><Text style={{ color: size === option ? TEAL : '#65747A', fontSize: 9, fontWeight: '800' }}>{option}</Text></TouchableOpacity>)}</View>
+          </>}
+          {activeZone === '02' && <>
+            <Text style={{ color: '#6E7B80', fontSize: 9, fontWeight: '700', marginBottom: 7 }}>VISOR TINT · {visor}</Text>
+            <View style={{ flexDirection: 'row', gap: 7 }}>{VISORS.map(option => <TouchableOpacity key={option.label} onPress={() => setVisor(option.label)} accessibilityRole="button" accessibilityState={{ selected: visor === option.label }} style={{ flex: 1, alignItems: 'center', gap: 4 }}><View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: option.color, borderWidth: visor === option.label ? 2 : 1, borderColor: visor === option.label ? TEAL : '#D8E1E3' }} /><Text style={{ color: '#66767D', fontSize: 8 }}>{option.label}</Text></TouchableOpacity>)}</View>
+          </>}
+          {activeZone === '03' && <>
+            <Text style={{ color: '#6E7B80', fontSize: 9, fontWeight: '700', marginBottom: 7 }}>EARCUP ACCENT · {accent}</Text>
+            <View style={{ flexDirection: 'row', gap: 7 }}>{ACCENTS.map(option => <TouchableOpacity key={option.label} onPress={() => setAccent(option.label)} accessibilityRole="button" accessibilityState={{ selected: accent === option.label }} style={{ flex: 1, alignItems: 'center', gap: 4 }}><View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: option.color, borderWidth: accent === option.label ? 2 : 1, borderColor: accent === option.label ? TEAL : '#D8E1E3' }} /><Text style={{ color: '#66767D', fontSize: 8 }}>{option.label}</Text></TouchableOpacity>)}</View>
+          </>}
+          {activeZone === '04' && <Text style={{ color: '#66767D', fontSize: 9 }}>Choose smart electronics below. Tap a feature to add or remove it from your build.</Text>}
         </View>
 
-        {/* Add-ons */}
-        <View style={{ paddingHorizontal: 20 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A', marginBottom: 12 }}>Add-On Accessories</Text>
-          {ADDONS.map((addon) => {
-            const isSelected = selected.includes(addon.id);
-            const zone = ZONES.find(z => z.id === addon.zone);
-            return (
-              <TouchableOpacity
-                key={addon.id}
-                onPress={() => toggle(addon.id)}
-                activeOpacity={0.8}
-                style={{
-                  backgroundColor: '#FFF', borderRadius: 16, padding: 14,
-                  flexDirection: 'row', alignItems: 'center', marginBottom: 10,
-                  borderWidth: 1.5, borderColor: isSelected ? '#00D1B2' : '#E2E8F0',
-                  shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-                }}
-              >
-                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: isSelected ? 'rgba(0,209,178,0.1)' : '#F8FAFC', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <Image source={addon.image} resizeMode="cover" style={{ width: 44, height: 44, borderRadius: 10 }} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 2 }}>{addon.label}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '900', color: '#00D1B2' }}>+₹{addon.price.toLocaleString('en-IN')}</Text>
-                    <View style={{ backgroundColor: zone?.color + '22', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 9, fontWeight: '700', color: zone?.color }}>Zone {addon.zone}</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  backgroundColor: isSelected ? '#00D1B2' : '#F1F5F9',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {isSelected ? <Check size={14} color="#FFF" strokeWidth={3} /> : <Plus size={14} color="#94A3B8" />}
-                </View>
-              </TouchableOpacity>
-            );
+        <View style={{ paddingHorizontal: 14 }}>
+          <Text style={{ color: '#26363D', fontSize: 12, fontWeight: '900', marginBottom: 8 }}>AVAILABLE FEATURES</Text>
+          {ADDONS.map(item => {
+            const isSelected = selected.includes(item.id);
+            return <TouchableOpacity key={item.id} onPress={() => toggle(item.id)} activeOpacity={0.8} style={{ backgroundColor: '#FFF', borderRadius: 15, padding: 9, flexDirection: 'row', alignItems: 'center', marginBottom: 7, borderWidth: 1, borderColor: isSelected ? '#D7E9E8' : '#E3ECEF' }}>
+              <Image source={item.image} resizeMode="cover" style={{ width: 39, height: 39, borderRadius: 10, marginRight: 9, backgroundColor: '#F0F4F4' }} />
+              <View style={{ flex: 1, paddingRight: 5 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#25343A', marginBottom: 3 }}>{item.label}</Text>
+                <Text numberOfLines={2} style={{ fontSize: 9, lineHeight: 12, color: '#728087' }}>{item.description}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end', minWidth: 63 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', color: TEAL }}>+{formatPrice(item.price)}</Text>
+                <View style={{ marginTop: 4, borderRadius: 10, backgroundColor: isSelected ? '#E4F6F2' : '#F3F6F6', paddingHorizontal: 7, paddingVertical: 3 }}><Text style={{ fontSize: 8, fontWeight: '800', color: isSelected ? TEAL : '#738187' }}>{isSelected ? 'Selected' : 'Add'}</Text></View>
+              </View>
+            </TouchableOpacity>;
           })}
         </View>
 
@@ -219,6 +221,10 @@ export default function BuilderScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+      <View style={{ height: 69, backgroundColor: '#FFF', borderTopWidth: 1, borderColor: '#DDE8EA', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+        {[{ label: 'Home', Icon: Home, route: '/(tabs)' }, { label: 'Helmet', Icon: TrendingUp, route: '/(tabs)/helmets' }, { label: 'Profile', Icon: UserRound, route: '/(tabs)/profile' }, { label: 'Settings', Icon: Settings, route: '/(tabs)/settings' }].map(({ label, Icon, route }) => <TouchableOpacity key={label} onPress={() => router.replace(route as never)} style={{ alignItems: 'center', justifyContent: 'center', minWidth: 54, gap: 3 }}><Icon size={16} color={label === 'Helmet' ? TEAL : '#78858B'} /><Text style={{ fontSize: 8, color: label === 'Helmet' ? TEAL : '#78858B', fontWeight: '600' }}>{label}</Text></TouchableOpacity>)}
+      </View>
     </SafeAreaView>
   );
 }
+

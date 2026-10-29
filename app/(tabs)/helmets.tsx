@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   Modal, TextInput, Dimensions, Image,
@@ -29,7 +29,16 @@ const COLORS = [
 
 const SIZES = ['S', 'M', 'L', 'XL'];
 
-const FEATURES = ['4K Camera', '24GB Storage', '64GB Storage', '128GB Storage', 'Gesture Control', 'Sony Speaker', 'Premium Visor', 'Clear Audio'];
+const FEATURES = [
+  { id: 'camera', label: '4K Camera', price: 2499 },
+  { id: 'storage24', label: '24GB Storage', price: 799 },
+  { id: 'storage64', label: '64GB Storage', price: 1299 },
+  { id: 'storage128', label: '128GB Storage', price: 1999 },
+  { id: 'gesture', label: 'Gesture Control', price: 1499 },
+  { id: 'speaker', label: 'Sony Speaker', price: 1999 },
+  { id: 'visor', label: 'Premium Visor', price: 1299 },
+  { id: 'audio', label: 'Clear Audio', price: 999 },
+];
 
 export default function HelmetsScreen() {
   const router = useRouter();
@@ -41,10 +50,17 @@ export default function HelmetsScreen() {
 
   const filtered = HELMETS.filter(h => h.name.toLowerCase().includes(search.toLowerCase()));
 
-  const toggleFeature = (f: string) => {
-    setSelectedFeatures(prev =>
-      prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
-    );
+  const selectedFeatureItems = useMemo(() => FEATURES.filter(feature => selectedFeatures.includes(feature.id)), [selectedFeatures]);
+  const featuresTotal = selectedFeatureItems.reduce((sum, feature) => sum + feature.price, 0);
+  const currentPrice = (selectedHelmet?.price ?? 0) + featuresTotal;
+
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev => {
+      const storageIds = ['storage24', 'storage64', 'storage128'];
+      if (prev.includes(featureId)) return prev.filter(id => id !== featureId);
+      const withoutOtherStorage = storageIds.includes(featureId) ? prev.filter(id => !storageIds.includes(id)) : prev;
+      return [...withoutOtherStorage, featureId];
+    });
   };
 
   return (
@@ -72,6 +88,19 @@ export default function HelmetsScreen() {
             style={{ flex: 1, height: 44, marginLeft: 10, color: '#15222B', fontSize: 14 }}
           />
         </View>
+        <TouchableOpacity
+          onPress={() => router.push('/builder')}
+          activeOpacity={0.85}
+          style={{ marginTop: 10, backgroundColor: '#12998F', borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11, flexDirection: 'row', alignItems: 'center' }}
+          accessibilityRole="button"
+          accessibilityLabel="Open custom helmet builder"
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>Customize your own helmet</Text>
+            <Text style={{ color: '#DDF5F1', fontSize: 9, marginTop: 2 }}>Choose a finish, size and smart features</Text>
+          </View>
+          <ChevronRight size={17} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
@@ -134,7 +163,7 @@ export default function HelmetsScreen() {
               {/* Price */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <Text style={{ fontSize: 28, fontWeight: '900', color: '#00D1B2' }}>
-                  ₹{selectedHelmet?.price.toLocaleString('en-IN')}
+                  ₹{currentPrice.toLocaleString('en-IN')}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Star size={16} color="#F59E0B" fill="#F59E0B" />
@@ -187,12 +216,12 @@ export default function HelmetsScreen() {
               {/* Smart Features */}
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', letterSpacing: 0.5, marginBottom: 10 }}>SMART FEATURES</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                {FEATURES.map(f => {
-                  const active = selectedFeatures.includes(f);
+                {FEATURES.map(feature => {
+                  const active = selectedFeatures.includes(feature.id);
                   return (
                     <TouchableOpacity
-                      key={f}
-                      onPress={() => toggleFeature(f)}
+                      key={feature.id}
+                      onPress={() => toggleFeature(feature.id)}
                       style={{
                         paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
                         backgroundColor: active ? 'rgba(0,209,178,0.1)' : '#FFF',
@@ -201,7 +230,7 @@ export default function HelmetsScreen() {
                       }}
                     >
                       {active && <Check size={11} color="#00D1B2" strokeWidth={3} />}
-                      <Text style={{ color: active ? '#00D1B2' : '#64748B', fontSize: 12, fontWeight: '600' }}>{f}</Text>
+                      <Text style={{ color: active ? '#00D1B2' : '#64748B', fontSize: 12, fontWeight: '600' }}>{feature.label} +₹{feature.price.toLocaleString('en-IN')}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -212,7 +241,7 @@ export default function HelmetsScreen() {
                 <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', marginBottom: 8 }}>SELECTED CONFIGURATION</Text>
                 <Text style={{ color: '#0F172A', fontSize: 13, lineHeight: 20 }}>
                   {selectedHelmet?.name} • {COLORS[selectedColor].name} • Size {selectedSize}{'\n'}
-                  Features: {selectedFeatures.join(', ')}
+                  {`${selectedHelmet?.name ?? ''} • ${COLORS[selectedColor].name} • Size ${selectedSize}\nFeatures: ${selectedFeatureItems.map(feature => `${feature.label} (+₹${feature.price.toLocaleString('en-IN')})`).join(', ') || 'None'}\nBase helmet: ₹${selectedHelmet?.price.toLocaleString('en-IN') ?? '0'}\nExtras: ₹${featuresTotal.toLocaleString('en-IN')}\nTotal: ₹${currentPrice.toLocaleString('en-IN')}`}
                 </Text>
               </View>
 
@@ -248,7 +277,7 @@ export default function HelmetsScreen() {
                   style={{ flex: 1.5 }}
                 >
                   <LinearGradient colors={['#00D1B2', '#05A894']} style={{ height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                    <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>Buy Now ₹{selectedHelmet?.price.toLocaleString('en-IN')}</Text>
+                    <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>Buy Now ₹{currentPrice.toLocaleString('en-IN')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
